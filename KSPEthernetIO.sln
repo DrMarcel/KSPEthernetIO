@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KSPEthernetIO", "KSPEthernetIO\KSPEthernetIO.csproj", "{D57888CD-CF5F-4B40-B42C-9CE281FC2DFF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D57888CD-CF5F-4B40-B42C-9CE281FC2DFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D57888CD-CF5F-4B40-B42C-9CE281FC2DFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D57888CD-CF5F-4B40-B42C-9CE281FC2DFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D57888CD-CF5F-4B40-B42C-9CE281FC2DFF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {191CBE39-9E73-44E6-B0A3-80C39F5EA4C2}
+	EndGlobalSection
+EndGlobal
