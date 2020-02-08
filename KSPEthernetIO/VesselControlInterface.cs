@@ -1,5 +1,6 @@
 ﻿using KSP.UI.Screens;
 using System;
+using UnityEngine;
 using static KSPEthernetIO.DataPackets;
 using static KSPEthernetIO.Utilities;
 
@@ -20,7 +21,10 @@ namespace KSPEthernetIO
             public Boolean Precision;
             public Boolean Abort;
             public Boolean Stage;
-            public int Mode;
+            public Boolean OpenMenu;
+            public Boolean OpenMap;
+            public int UiMode;
+            public int CameraMode;
             public int SASMode;
             public int SpeedMode;
             public Boolean[] ControlGroup;
@@ -106,6 +110,10 @@ namespace KSPEthernetIO
             _vControls.WheelThrottle = (float)CPacket.WheelThrottle / 1000.0F;
             _vControls.SASMode = (int)CPacket.NavballSASMode & 0x0F;
             _vControls.SpeedMode = (int)(CPacket.NavballSASMode >> 4);
+            _vControls.UiMode = (int)CPacket.Mode & 0x0F;
+            _vControls.CameraMode = (int)(CPacket.Mode >> 4);
+            _vControls.OpenMenu = BitMathByte(CPacket.AdditionalControlByte1, 0);
+            _vControls.OpenMap = BitMathByte(CPacket.AdditionalControlByte1, 1);
 
             for (int j = 1; j <= 10; j++)
             {
@@ -270,6 +278,69 @@ namespace KSPEthernetIO
                 }
             }
 
+            if (_vControlsOld.UiMode != _vControls.UiMode)
+            {
+                if (FlightUIModeController.Instance != null)
+                {
+                    switch (_vControls.UiMode)
+                    {
+                        case 0:
+                            FlightUIModeController.Instance.SetMode(FlightUIMode.STAGING);
+                            break;
+                        case 1:
+                            FlightUIModeController.Instance.SetMode(FlightUIMode.DOCKING);
+                            break;
+                        case 2:
+                            FlightUIModeController.Instance.SetMode(FlightUIMode.MAPMODE);
+                            break;
+                        default:
+                            break;
+                    }
+                    _vControlsOld.UiMode = _vControls.UiMode;
+                }
+            }
+
+            if (_vControlsOld.CameraMode != _vControls.CameraMode)
+            {
+                if (FlightCamera.fetch != null)
+                {
+                    switch (_vControls.CameraMode)
+                    {
+                        case 0:
+                            FlightCamera.fetch.setMode(FlightCamera.Modes.AUTO);
+                            break;
+                        case 1:
+                            FlightCamera.fetch.setMode(FlightCamera.Modes.FREE);
+                            break;
+                        case 2:
+                            FlightCamera.fetch.setMode(FlightCamera.Modes.ORBITAL);
+                            break;
+                        case 3:
+                            FlightCamera.fetch.setMode(FlightCamera.Modes.CHASE);
+                            break;
+                        case 4:
+                            FlightCamera.fetch.setMode(FlightCamera.Modes.LOCKED);
+                            break;
+                        default:
+                            break;
+                    }
+                    _vControlsOld.CameraMode = _vControls.CameraMode;
+                }
+            }
+
+            if (_vControlsOld.OpenMenu != _vControls.OpenMenu)
+            {
+                if (_vControls.OpenMenu) PauseMenu.Display();
+                else PauseMenu.Close();
+                _vControlsOld.OpenMenu = _vControls.OpenMenu;
+            }
+
+            if (_vControlsOld.OpenMap != _vControls.OpenMap)
+            {
+                if (_vControls.OpenMap) MapView.EnterMapView();
+                else MapView.ExitMapView();
+                _vControlsOld.OpenMap = _vControls.OpenMap;
+            }
         }
 
         /// <summary>

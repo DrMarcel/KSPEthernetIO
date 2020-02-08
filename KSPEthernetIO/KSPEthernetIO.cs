@@ -175,14 +175,14 @@ namespace KSPEthernetIO
                 Debug.Log("[KSPEthernetIO]: " + packetCounter + " ControlPackets received [" + 1000 * dt / packetCounter + "ms]");
                 packetCounter = 0;
             }
-            else
+            if (!KSPEthernetIO.Server.ClientConnected)
             {
-                packetCounter = 0;
                 lastUpdateTime = Time.unscaledTime;
+                packetCounter = 0;
             }
 
-            //Handle received packet
-            control.ControlsReceived(CPacket);
+                //Handle received packet
+                control.ControlsReceived(CPacket);
         }
 
         /// <summary>
