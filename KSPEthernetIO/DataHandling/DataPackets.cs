@@ -87,7 +87,7 @@ namespace KSPEthernetIO
             public UInt16 TargetPitch;    //60 Pitch   Of the Target   Vector;  see above for range;  (0 if no Target)
             public UInt16 TargetHeading;  //61 Heading Of the Target   Vector;  see above for range;  (0 if no Target)
             public UInt16 NormalHeading;  //62 Heading Of the Prograde Vector;  see above for range;  (Pitch of the Heading Vector is always 0)
-            public byte vesselChange;     //63 Starting with 1, increased on every VesselChange
+            public byte vesselSync;       //63 Starting with 1, increased on every VesselChange
         }
 
         /// <summary>
@@ -136,6 +136,7 @@ namespace KSPEthernetIO
             public short WheelSteer;                   //-1000 -> 1000
             public short Throttle;                     // 0 -> 1000
             public short WheelThrottle;                // 0 -> 1000
+            public byte vesselSync;                    // Mirror from VesselData - to prevent using an old ControlPacket after vessel change
         };
 
         /// <summary>

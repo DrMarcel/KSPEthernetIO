@@ -16,7 +16,7 @@ namespace KSPEthernetIO
         private double _missionTimeOld = 0;
         private double _theTime = 0;
         private double _refreshrate = 1.0f;
-        private Vessel _vesselOld = null;
+        private Vessel _activeVessel = null;
 
         public enum EnumAG : int
         {
@@ -48,6 +48,7 @@ namespace KSPEthernetIO
         }
 
         private VesselData _vData;
+        private static byte _vesselSync = 0; //Save sync value static to share between different flights
 
         /// <summary>
         /// Initialize VesselDataInterface
@@ -56,7 +57,13 @@ namespace KSPEthernetIO
         {
             _vData = new VesselData();
             _vData.id = VDid;
+            _vData.vesselSync = _vesselSync;
             _refreshrate = Settings.Refresh;
+        }
+
+        public byte getVesselSync()
+        {
+            return _vData.vesselSync;
         }
 
         /// <summary>
@@ -68,18 +75,18 @@ namespace KSPEthernetIO
             if (FlightGlobals.ActiveVessel != null)
             {
                 bool vesselChanged = false;
-                if (_vesselOld == null || _vesselOld.id != FlightGlobals.ActiveVessel.id) vesselChanged = true;
-                if (vesselChanged) _vesselOld = FlightGlobals.ActiveVessel;
+                if (_activeVessel == null || _activeVessel.id != FlightGlobals.ActiveVessel.id) vesselChanged = true;
+                if (vesselChanged)
+                {
+                    _activeVessel = FlightGlobals.ActiveVessel;
+                    _vData.vesselSync++;
+                    if (_vData.vesselSync == 0) _vData.vesselSync++;
+                    _vesselSync = _vData.vesselSync;
+                }
 
                 _theTime = Time.unscaledTime;
                 if ((_theTime - _lastUpdate)*1000 > _refreshrate)
                 {
-                    if(vesselChanged)
-                    {
-                        _vData.vesselChange++;
-                        if(_vData.vesselChange == 0) _vData.vesselChange++;
-                    }
-
                     IOResource TempR = new IOResource();
 
                     Vessel ActiveVessel = FlightGlobals.ActiveVessel;

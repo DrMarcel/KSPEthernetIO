@@ -37,6 +37,7 @@ namespace KSPEthernetIO
             public float WheelSteer;
             public float Throttle;
             public float WheelThrottle;
+            public byte vesselSync;
         };
 
         private VesselControls _vControls = new VesselControls();
@@ -74,11 +75,10 @@ namespace KSPEthernetIO
                     _activeVessel.OnPostAutopilotUpdate += AxisInput;
 
                     //sync some inputs on vessel switch
-                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.RCS, _vControls.RCS);
-                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.SAS, _vControls.SAS);
-                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Light, _vControls.Lights);
-                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Gear, _vControls.Gear);
-                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, _vControls.Brakes);
+
+                    //Current vessel state is send to client with next VesselData Packet
+                    //So the current control state is taken from the new vessel and not from the client
+                    //Prevents retracting landing gears and other bad stuff on vessel change
 
                 }
             }
@@ -86,260 +86,270 @@ namespace KSPEthernetIO
 
         /// <summary>
         /// Send new control data to the active vessel.
+        /// Checks the vesselSync value to prevent using old ControlPackets after vessel change.
         /// </summary>
         /// <param name="CPacket">Control data</param>
-        public void ControlsReceived(ControlPacket CPacket)
+        /// <param name="sync">Current VesselData sync value</param>
+        public void ControlsReceived(ControlPacket CPacket, byte sync)
         {
-
-            _vControls.SAS = BitMathByte(CPacket.MainControls, 7);
-            _vControls.RCS = BitMathByte(CPacket.MainControls, 6);
-            _vControls.Lights = BitMathByte(CPacket.MainControls, 5);
-            _vControls.Gear = BitMathByte(CPacket.MainControls, 4);
-            _vControls.Brakes = BitMathByte(CPacket.MainControls, 3);
-            _vControls.Precision = BitMathByte(CPacket.MainControls, 2);
-            _vControls.Abort = BitMathByte(CPacket.MainControls, 1);
-            _vControls.Stage = BitMathByte(CPacket.MainControls, 0);
-            _vControls.Pitch = (float)CPacket.Pitch / 1000.0F;
-            _vControls.Roll = (float)CPacket.Roll / 1000.0F;
-            _vControls.Yaw = (float)CPacket.Yaw / 1000.0F;
-            _vControls.TX = (float)CPacket.TX / 1000.0F;
-            _vControls.TY = (float)CPacket.TY / 1000.0F;
-            _vControls.TZ = (float)CPacket.TZ / 1000.0F;
-            _vControls.WheelSteer = (float)CPacket.WheelSteer / 1000.0F;
-            _vControls.Throttle = (float)CPacket.Throttle / 1000.0F;
-            _vControls.WheelThrottle = (float)CPacket.WheelThrottle / 1000.0F;
-            _vControls.SASMode = (int)CPacket.NavballSASMode & 0x0F;
-            _vControls.SpeedMode = (int)(CPacket.NavballSASMode >> 4);
-            _vControls.UiMode = (int)CPacket.Mode & 0x0F;
-            _vControls.CameraMode = (int)(CPacket.Mode >> 4);
-            _vControls.OpenMenu = BitMathByte(CPacket.AdditionalControlByte1, 0);
-            _vControls.OpenMap = BitMathByte(CPacket.AdditionalControlByte1, 1);
-
-            for (int j = 1; j <= 10; j++)
+            if (CPacket.vesselSync == sync)
             {
-                _vControls.ControlGroup[j] = BitMathUshort(CPacket.ControlGroup, j);
-            }
+                //Detect vessel change
+                _vControls.vesselSync = CPacket.vesselSync;
+                bool vesselChanged = _vControls.vesselSync != _vControlsOld.vesselSync;
+                _vControlsOld.vesselSync = _vControls.vesselSync;
 
 
-            //if (FlightInputHandler.RCSLock != VControls.RCS)
-            if (_vControls.RCS != _vControlsOld.RCS)
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.RCS, _vControls.RCS);
-                _vControlsOld.RCS = _vControls.RCS;
-                //ScreenMessages.PostScreenMessage("RCS: " + VControls.RCS.ToString(), 10f, KSPIOScreenStyle);
-            }
+                _vControls.SAS = BitMathByte(CPacket.MainControls, 7);
+                _vControls.RCS = BitMathByte(CPacket.MainControls, 6);
+                _vControls.Lights = BitMathByte(CPacket.MainControls, 5);
+                _vControls.Gear = BitMathByte(CPacket.MainControls, 4);
+                _vControls.Brakes = BitMathByte(CPacket.MainControls, 3);
+                _vControls.Precision = BitMathByte(CPacket.MainControls, 2);
+                _vControls.Abort = BitMathByte(CPacket.MainControls, 1);
+                _vControls.Stage = BitMathByte(CPacket.MainControls, 0);
+                _vControls.Pitch = (float)CPacket.Pitch / 1000.0F;
+                _vControls.Roll = (float)CPacket.Roll / 1000.0F;
+                _vControls.Yaw = (float)CPacket.Yaw / 1000.0F;
+                _vControls.TX = (float)CPacket.TX / 1000.0F;
+                _vControls.TY = (float)CPacket.TY / 1000.0F;
+                _vControls.TZ = (float)CPacket.TZ / 1000.0F;
+                _vControls.WheelSteer = (float)CPacket.WheelSteer / 1000.0F;
+                _vControls.Throttle = (float)CPacket.Throttle / 1000.0F;
+                _vControls.WheelThrottle = (float)CPacket.WheelThrottle / 1000.0F;
+                _vControls.SASMode = (int)CPacket.NavballSASMode & 0x0F;
+                _vControls.SpeedMode = (int)(CPacket.NavballSASMode >> 4);
+                _vControls.UiMode = (int)CPacket.Mode & 0x0F;
+                _vControls.CameraMode = (int)(CPacket.Mode >> 4);
+                _vControls.OpenMenu = BitMathByte(CPacket.AdditionalControlByte1, 0);
+                _vControls.OpenMap = BitMathByte(CPacket.AdditionalControlByte1, 1);
 
-            //if (ActiveVessel.ctrlState.killRot != VControls.SAS)
-            if (_vControls.SAS != _vControlsOld.SAS)
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.SAS, _vControls.SAS);
-                _vControlsOld.SAS = _vControls.SAS;
-                //ScreenMessages.PostScreenMessage("SAS: " + VControls.SAS.ToString(), 10f, KSPIOScreenStyle);
-            }
-
-            if (_vControls.Lights != _vControlsOld.Lights)
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Light, _vControls.Lights);
-                _vControlsOld.Lights = _vControls.Lights;
-            }
-
-            if (_vControls.Gear != _vControlsOld.Gear)
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Gear, _vControls.Gear);
-                _vControlsOld.Gear = _vControls.Gear;
-            }
-
-            if (_vControls.Brakes != _vControlsOld.Brakes)
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, _vControls.Brakes);
-                _vControlsOld.Brakes = _vControls.Brakes;
-            }
-
-            if (_vControls.Abort != _vControlsOld.Abort)
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Abort, _vControls.Abort);
-                _vControlsOld.Abort = _vControls.Abort;
-            }
-
-            if (_vControls.Stage != _vControlsOld.Stage)
-            {
-                if (_vControls.Stage) StageManager.ActivateNextStage();
-
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Stage, _vControls.Stage);
-                _vControlsOld.Stage = _vControls.Stage;
-            }
-
-            //================ control groups
-
-            if (_vControls.ControlGroup[1] != _vControlsOld.ControlGroup[1])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom01, _vControls.ControlGroup[1]);
-                _vControlsOld.ControlGroup[1] = _vControls.ControlGroup[1];
-            }
-
-            if (_vControls.ControlGroup[2] != _vControlsOld.ControlGroup[2])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom02, _vControls.ControlGroup[2]);
-                _vControlsOld.ControlGroup[2] = _vControls.ControlGroup[2];
-            }
-
-            if (_vControls.ControlGroup[3] != _vControlsOld.ControlGroup[3])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom03, _vControls.ControlGroup[3]);
-                _vControlsOld.ControlGroup[3] = _vControls.ControlGroup[3];
-            }
-
-            if (_vControls.ControlGroup[4] != _vControlsOld.ControlGroup[4])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom04, _vControls.ControlGroup[4]);
-                _vControlsOld.ControlGroup[4] = _vControls.ControlGroup[4];
-            }
-
-            if (_vControls.ControlGroup[5] != _vControlsOld.ControlGroup[5])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom05, _vControls.ControlGroup[5]);
-                _vControlsOld.ControlGroup[5] = _vControls.ControlGroup[5];
-            }
-
-            if (_vControls.ControlGroup[6] != _vControlsOld.ControlGroup[6])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom06, _vControls.ControlGroup[6]);
-                _vControlsOld.ControlGroup[6] = _vControls.ControlGroup[6];
-            }
-
-            if (_vControls.ControlGroup[7] != _vControlsOld.ControlGroup[7])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom07, _vControls.ControlGroup[7]);
-                _vControlsOld.ControlGroup[7] = _vControls.ControlGroup[7];
-            }
-
-            if (_vControls.ControlGroup[8] != _vControlsOld.ControlGroup[8])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom08, _vControls.ControlGroup[8]);
-                _vControlsOld.ControlGroup[8] = _vControls.ControlGroup[8];
-            }
-
-            if (_vControls.ControlGroup[9] != _vControlsOld.ControlGroup[9])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom09, _vControls.ControlGroup[9]);
-                _vControlsOld.ControlGroup[9] = _vControls.ControlGroup[9];
-            }
-
-            if (_vControls.ControlGroup[10] != _vControlsOld.ControlGroup[10])
-            {
-                _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom10, _vControls.ControlGroup[10]);
-                _vControlsOld.ControlGroup[10] = _vControls.ControlGroup[10];
-            }
-
-            //Set sas mode
-            if (_vControls.SASMode != _vControlsOld.SASMode)
-            {
-                if (_vControls.SASMode != 0 && _vControls.SASMode < 11)
+                for (int j = 1; j <= 10; j++)
                 {
-                    if (!_activeVessel.Autopilot.CanSetMode((VesselAutopilot.AutopilotMode)(_vControls.SASMode - 1)))
+                    _vControls.ControlGroup[j] = BitMathUshort(CPacket.ControlGroup, j);
+                }
+
+
+                //if (FlightInputHandler.RCSLock != VControls.RCS)
+                if (_vControls.RCS != _vControlsOld.RCS || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.RCS, _vControls.RCS);
+                    _vControlsOld.RCS = _vControls.RCS;
+                    //ScreenMessages.PostScreenMessage("RCS: " + VControls.RCS.ToString(), 10f, KSPIOScreenStyle);
+                }
+
+                //if (ActiveVessel.ctrlState.killRot != VControls.SAS)
+                if (_vControls.SAS != _vControlsOld.SAS || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.SAS, _vControls.SAS);
+                    _vControlsOld.SAS = _vControls.SAS;
+                    //ScreenMessages.PostScreenMessage("SAS: " + VControls.SAS.ToString(), 10f, KSPIOScreenStyle);
+                }
+
+                if (_vControls.Lights != _vControlsOld.Lights || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Light, _vControls.Lights);
+                    _vControlsOld.Lights = _vControls.Lights;
+                }
+
+                if (_vControls.Gear != _vControlsOld.Gear || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Gear, _vControls.Gear);
+                    _vControlsOld.Gear = _vControls.Gear;
+                }
+
+                if (_vControls.Brakes != _vControlsOld.Brakes || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, _vControls.Brakes);
+                    _vControlsOld.Brakes = _vControls.Brakes;
+                }
+
+                if (_vControls.Abort != _vControlsOld.Abort || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Abort, _vControls.Abort);
+                    _vControlsOld.Abort = _vControls.Abort;
+                }
+
+                if (_vControls.Stage != _vControlsOld.Stage || vesselChanged)
+                {
+                    if (_vControls.Stage) StageManager.ActivateNextStage();
+
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Stage, _vControls.Stage);
+                    _vControlsOld.Stage = _vControls.Stage;
+                }
+
+                //================ control groups
+
+                if (_vControls.ControlGroup[1] != _vControlsOld.ControlGroup[1] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom01, _vControls.ControlGroup[1]);
+                    _vControlsOld.ControlGroup[1] = _vControls.ControlGroup[1];
+                }
+
+                if (_vControls.ControlGroup[2] != _vControlsOld.ControlGroup[2] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom02, _vControls.ControlGroup[2]);
+                    _vControlsOld.ControlGroup[2] = _vControls.ControlGroup[2];
+                }
+
+                if (_vControls.ControlGroup[3] != _vControlsOld.ControlGroup[3] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom03, _vControls.ControlGroup[3]);
+                    _vControlsOld.ControlGroup[3] = _vControls.ControlGroup[3];
+                }
+
+                if (_vControls.ControlGroup[4] != _vControlsOld.ControlGroup[4] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom04, _vControls.ControlGroup[4]);
+                    _vControlsOld.ControlGroup[4] = _vControls.ControlGroup[4];
+                }
+
+                if (_vControls.ControlGroup[5] != _vControlsOld.ControlGroup[5] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom05, _vControls.ControlGroup[5]);
+                    _vControlsOld.ControlGroup[5] = _vControls.ControlGroup[5];
+                }
+
+                if (_vControls.ControlGroup[6] != _vControlsOld.ControlGroup[6] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom06, _vControls.ControlGroup[6]);
+                    _vControlsOld.ControlGroup[6] = _vControls.ControlGroup[6];
+                }
+
+                if (_vControls.ControlGroup[7] != _vControlsOld.ControlGroup[7] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom07, _vControls.ControlGroup[7]);
+                    _vControlsOld.ControlGroup[7] = _vControls.ControlGroup[7];
+                }
+
+                if (_vControls.ControlGroup[8] != _vControlsOld.ControlGroup[8] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom08, _vControls.ControlGroup[8]);
+                    _vControlsOld.ControlGroup[8] = _vControls.ControlGroup[8];
+                }
+
+                if (_vControls.ControlGroup[9] != _vControlsOld.ControlGroup[9] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom09, _vControls.ControlGroup[9]);
+                    _vControlsOld.ControlGroup[9] = _vControls.ControlGroup[9];
+                }
+
+                if (_vControls.ControlGroup[10] != _vControlsOld.ControlGroup[10] || vesselChanged)
+                {
+                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.Custom10, _vControls.ControlGroup[10]);
+                    _vControlsOld.ControlGroup[10] = _vControls.ControlGroup[10];
+                }
+
+                //Set sas mode
+                if (_vControls.SASMode != _vControlsOld.SASMode || vesselChanged)
+                {
+                    if (_vControls.SASMode != 0 && _vControls.SASMode < 11)
                     {
-                        ScreenMessages.PostScreenMessage("[KSPEthernetIO]: SAS mode " + _vControls.SASMode.ToString() + " not avalible");
+                        if (!_activeVessel.Autopilot.CanSetMode((VesselAutopilot.AutopilotMode)(_vControls.SASMode - 1)))
+                        {
+                            ScreenMessages.PostScreenMessage("[KSPEthernetIO]: SAS mode " + _vControls.SASMode.ToString() + " not avalible");
+                        }
+                        else
+                        {
+                            _activeVessel.Autopilot.SetMode((VesselAutopilot.AutopilotMode)_vControls.SASMode - 1);
+                        }
                     }
-                    else
+                    _vControlsOld.SASMode = _vControls.SASMode;
+                }
+
+                //set navball mode
+                if (_vControls.SpeedMode != _vControlsOld.SpeedMode || vesselChanged)
+                {
+                    if (!((_vControls.SpeedMode == 0) || ((_vControls.SpeedMode == 3) && !TargetExists())))
                     {
-                        _activeVessel.Autopilot.SetMode((VesselAutopilot.AutopilotMode)_vControls.SASMode - 1);
+                        FlightGlobals.SetSpeedMode((FlightGlobals.SpeedDisplayModes)(_vControls.SpeedMode - 1));
                     }
+                    _vControlsOld.SpeedMode = _vControls.SpeedMode;
                 }
-                _vControlsOld.SASMode = _vControls.SASMode;
-            }
-
-            //set navball mode
-            if (_vControls.SpeedMode != _vControlsOld.SpeedMode)
-            {
-                if (!((_vControls.SpeedMode == 0) || ((_vControls.SpeedMode == 3) && !TargetExists())))
-                {
-                    FlightGlobals.SetSpeedMode((FlightGlobals.SpeedDisplayModes)(_vControls.SpeedMode - 1));
-                }
-                _vControlsOld.SpeedMode = _vControls.SpeedMode;
-            }
 
 
-            if (Math.Abs(_vControls.Pitch) > Settings.SASTol ||
-                Math.Abs(_vControls.Roll) > Settings.SASTol ||
-                Math.Abs(_vControls.Yaw) > Settings.SASTol)
-            {
-                if ((_activeVessel.ActionGroups[KSPActionGroup.SAS]) && (_wasSASOn == false))
+                if (Math.Abs(_vControls.Pitch) > Settings.SASTol ||
+                    Math.Abs(_vControls.Roll) > Settings.SASTol ||
+                    Math.Abs(_vControls.Yaw) > Settings.SASTol)
                 {
-                    _wasSASOn = true;
-                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.SAS, false);
-                }
-            }
-            else
-            {
-                if (_wasSASOn == true)
-                {
-                    _wasSASOn = false;
-                    _activeVessel.ActionGroups.SetGroup(KSPActionGroup.SAS, true);
-                }
-            }
-
-            if (_vControlsOld.UiMode != _vControls.UiMode)
-            {
-                if (FlightUIModeController.Instance != null)
-                {
-                    switch (_vControls.UiMode)
+                    if ((_activeVessel.ActionGroups[KSPActionGroup.SAS]) && (_wasSASOn == false))
                     {
-                        case 0:
-                            FlightUIModeController.Instance.SetMode(FlightUIMode.STAGING);
-                            break;
-                        case 1:
-                            FlightUIModeController.Instance.SetMode(FlightUIMode.DOCKING);
-                            break;
-                        case 2:
-                            FlightUIModeController.Instance.SetMode(FlightUIMode.MAPMODE);
-                            break;
-                        default:
-                            break;
+                        _wasSASOn = true;
+                        _activeVessel.ActionGroups.SetGroup(KSPActionGroup.SAS, false);
                     }
-                    _vControlsOld.UiMode = _vControls.UiMode;
                 }
-            }
-
-            if (_vControlsOld.CameraMode != _vControls.CameraMode)
-            {
-                if (FlightCamera.fetch != null)
+                else
                 {
-                    switch (_vControls.CameraMode)
+                    if (_wasSASOn == true)
                     {
-                        case 0:
-                            FlightCamera.fetch.setMode(FlightCamera.Modes.AUTO);
-                            break;
-                        case 1:
-                            FlightCamera.fetch.setMode(FlightCamera.Modes.FREE);
-                            break;
-                        case 2:
-                            FlightCamera.fetch.setMode(FlightCamera.Modes.ORBITAL);
-                            break;
-                        case 3:
-                            FlightCamera.fetch.setMode(FlightCamera.Modes.CHASE);
-                            break;
-                        case 4:
-                            FlightCamera.fetch.setMode(FlightCamera.Modes.LOCKED);
-                            break;
-                        default:
-                            break;
+                        _wasSASOn = false;
+                        _activeVessel.ActionGroups.SetGroup(KSPActionGroup.SAS, true);
                     }
-                    _vControlsOld.CameraMode = _vControls.CameraMode;
                 }
-            }
 
-            if (_vControlsOld.OpenMenu != _vControls.OpenMenu)
-            {
-                if (_vControls.OpenMenu) PauseMenu.Display();
-                else PauseMenu.Close();
-                _vControlsOld.OpenMenu = _vControls.OpenMenu;
-            }
+                if (_vControlsOld.UiMode != _vControls.UiMode || vesselChanged)
+                {
+                    if (FlightUIModeController.Instance != null)
+                    {
+                        switch (_vControls.UiMode)
+                        {
+                            case 0:
+                                FlightUIModeController.Instance.SetMode(FlightUIMode.STAGING);
+                                break;
+                            case 1:
+                                FlightUIModeController.Instance.SetMode(FlightUIMode.DOCKING);
+                                break;
+                            case 2:
+                                FlightUIModeController.Instance.SetMode(FlightUIMode.MAPMODE);
+                                break;
+                            default:
+                                break;
+                        }
+                        _vControlsOld.UiMode = _vControls.UiMode;
+                    }
+                }
 
-            if (_vControlsOld.OpenMap != _vControls.OpenMap)
-            {
-                if (_vControls.OpenMap) MapView.EnterMapView();
-                else MapView.ExitMapView();
-                _vControlsOld.OpenMap = _vControls.OpenMap;
+                if (_vControlsOld.CameraMode != _vControls.CameraMode || vesselChanged)
+                {
+                    if (FlightCamera.fetch != null)
+                    {
+                        switch (_vControls.CameraMode)
+                        {
+                            case 0:
+                                FlightCamera.fetch.setMode(FlightCamera.Modes.AUTO);
+                                break;
+                            case 1:
+                                FlightCamera.fetch.setMode(FlightCamera.Modes.FREE);
+                                break;
+                            case 2:
+                                FlightCamera.fetch.setMode(FlightCamera.Modes.ORBITAL);
+                                break;
+                            case 3:
+                                FlightCamera.fetch.setMode(FlightCamera.Modes.CHASE);
+                                break;
+                            case 4:
+                                FlightCamera.fetch.setMode(FlightCamera.Modes.LOCKED);
+                                break;
+                            default:
+                                break;
+                        }
+                        _vControlsOld.CameraMode = _vControls.CameraMode;
+                    }
+                }
+
+                if (_vControlsOld.OpenMenu != _vControls.OpenMenu || vesselChanged)
+                {
+                    if (_vControls.OpenMenu) PauseMenu.Display();
+                    else PauseMenu.Close();
+                    _vControlsOld.OpenMenu = _vControls.OpenMenu;
+                }
+
+                if (_vControlsOld.OpenMap != _vControls.OpenMap || vesselChanged)
+                {
+                    if (_vControls.OpenMap) MapView.EnterMapView();
+                    else MapView.ExitMapView();
+                    _vControlsOld.OpenMap = _vControls.OpenMap;
+                }
             }
         }
 

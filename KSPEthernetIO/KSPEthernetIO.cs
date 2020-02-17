@@ -186,7 +186,7 @@ namespace KSPEthernetIO
             }
 
             //Handle received packet
-            control.ControlsReceived(CPacket);
+            control.ControlsReceived(CPacket, data.getVesselSync());
         }
 
         /// <summary>
