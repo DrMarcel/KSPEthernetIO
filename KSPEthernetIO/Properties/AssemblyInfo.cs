@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("DrMarcel")]
 [assembly: AssemblyProduct("KSPEthernetIO")]
-[assembly: AssemblyCopyright("CC BY 3.0")]
+[assembly: AssemblyCopyright("CC BY 4.0")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // Sie können alle Werte angeben oder Standardwerte für die Build- und Revisionsnummern verwenden,
 // indem Sie "*" wie unten gezeigt eingeben:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.1.0")]
-[assembly: AssemblyFileVersion("0.1.0")]
+[assembly: AssemblyVersion("0.1.1")]
+[assembly: AssemblyFileVersion("0.1.1")]
