@@ -16,6 +16,7 @@ namespace KSPEthernetIO
         private double _missionTimeOld = 0;
         private double _theTime = 0;
         private double _refreshrate = 1.0f;
+        private Vessel _vesselOld = null;
 
         public enum EnumAG : int
         {
@@ -66,9 +67,19 @@ namespace KSPEthernetIO
         {
             if (FlightGlobals.ActiveVessel != null)
             {
+                bool vesselChanged = false;
+                if (_vesselOld == null || _vesselOld.id != FlightGlobals.ActiveVessel.id) vesselChanged = true;
+                if (vesselChanged) _vesselOld = FlightGlobals.ActiveVessel;
+
                 _theTime = Time.unscaledTime;
                 if ((_theTime - _lastUpdate)*1000 > _refreshrate)
                 {
+                    if(vesselChanged)
+                    {
+                        _vData.vesselChange++;
+                        if(_vData.vesselChange == 0) _vData.vesselChange++;
+                    }
+
                     IOResource TempR = new IOResource();
 
                     Vessel ActiveVessel = FlightGlobals.ActiveVessel;

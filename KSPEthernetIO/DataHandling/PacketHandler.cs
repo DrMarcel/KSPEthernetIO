@@ -45,6 +45,8 @@ namespace KSPEthernetIO
             set { }
         }
 
+        private StatusPacket _status = new StatusPacket();
+
         private enum ReceiveStates : byte
         {
             FIRSTHEADER,  // Waiting for first header
@@ -76,6 +78,9 @@ namespace KSPEthernetIO
 
             _server = server;
             _server.AddListener(this);
+
+            _status.id = SPid;
+            _status.status = SUndefined;
 
             Debug.Log("[KSPEthernetIO]: Initialize PacketHandler");
 
@@ -204,7 +209,7 @@ namespace KSPEthernetIO
                     HPacket = (HandshakePacket)ByteArrayToStructure(packet, HPacket);
                     _dataReceiveMutex.WaitOne();
                     //Check hard coded HS values
-                    if ((HPacket.M1 == 3) && (HPacket.M2 == 1) && (HPacket.M3 == 4))
+                    if ((HPacket.M1 == 3) && (HPacket.M2 == 1) && (HPacket.status == 4))
                     {
                         Debug.Log("[KSPEthernetIO]: Handshake complete");
                         _handshakeReceived = true;
@@ -317,7 +322,7 @@ namespace KSPEthernetIO
             //Hardcoded HS Packet for broadcasts
             HandshakePacket HPacket = new HandshakePacket();
             HPacket.id = HSPid;
-            HPacket.M1 = 1; HPacket.M2 = 2; HPacket.M3 = 3;
+            HPacket.M1 = 1; HPacket.M2 = 2; HPacket.status = _status.status;
 
             int broadcastTimer = 0;
             int handshakeTimer = 0;
@@ -334,6 +339,7 @@ namespace KSPEthernetIO
                     {
                         broadcastTimer = 0;
                         //Debug.Log("[KSPEthernetIO]: Sending broadcast...");
+                        HPacket.status = _status.status;
                         _server.SendBroadcast(StructureToPacket(HPacket));
                     }
                 }
@@ -369,6 +375,27 @@ namespace KSPEthernetIO
             }
         }
 
+        /// <summary>
+        /// Send current host state to client
+        /// </summary>
+        /// <param name="status">Host state</param>
+        public void updateStatus(byte status)
+        {
+            if (_status.status != status)
+            {
+                _status.status = status;
+                sendStatus();
+            }
+        }
+
+        /// <summary>
+        /// Helper function to send StatusPacket
+        /// </summary>
+        private void sendStatus()
+        {
+            if (_server.ClientConnected && (HandshakeReceived || _handshakeDisable))
+                _server.Send(StructureToPacket(_status));
+        }
     }
 
     /// <summary>

@@ -11,7 +11,8 @@ namespace KSPEthernetIO
     public class DataPackets
     {
         public const int MaxPayloadSize = 255;
-        public const byte HSPid = 0, VDid = 1, Cid = 101; //hard coded values for packet IDs
+        public const byte HSPid = 0, VDid = 1, SPid = 2, Cid = 101; //hard coded values for packet IDs
+        public const byte SUndefined = 0, SInFlight = 1, SNotInFlight = 2; //hard coded values for StatusPacket and Handshake Packet status
 
         /// <summary>
         /// Unidirectional data from KSPEthernetIO to client.
@@ -86,10 +87,23 @@ namespace KSPEthernetIO
             public UInt16 TargetPitch;    //60 Pitch   Of the Target   Vector;  see above for range;  (0 if no Target)
             public UInt16 TargetHeading;  //61 Heading Of the Target   Vector;  see above for range;  (0 if no Target)
             public UInt16 NormalHeading;  //62 Heading Of the Prograde Vector;  see above for range;  (Pitch of the Heading Vector is always 0)
+            public byte vesselChange;     //63 Starting with 1, increased on every VesselChange
+        }
+
+        /// <summary>
+        /// Unidirectional data from KSPEthernetIO to client to transmit status updates.
+        /// Currently only in flight and not in flight
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct StatusPacket
+        {
+            public byte id;              //1
+            public byte status;          //2
         }
 
         /// <summary>
         /// Bidirectional handshake data.
+        /// Host sends status byte to client.
         /// </summary>
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct HandshakePacket
@@ -97,7 +111,7 @@ namespace KSPEthernetIO
             public byte id;
             public byte M1;
             public byte M2;
-            public byte M3;
+            public byte status;
         }
 
         /// <summary>

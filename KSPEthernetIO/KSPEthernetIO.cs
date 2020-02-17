@@ -11,7 +11,7 @@ namespace KSPEthernetIO
     ///             KSPEthernetIO 
     ///           ***************** 
     /// 
-    /// Version:     0.1.0
+    /// Version:     0.1.1
     /// Author:      DrMarcel
     /// 
     /// License:     CC BY 3.0 
@@ -68,6 +68,7 @@ namespace KSPEthernetIO
                     Settings.WatchdogDisable, Settings.WatchdogTimeout,
                     Settings.HandshakeDisable, Settings.HandshakeTimeout,
                     Settings.BroadcastDisable, Settings.Broadcast);
+                Handler.updateStatus(SNotInFlight);
 
                 _initialized = true;
             }
@@ -108,7 +109,8 @@ namespace KSPEthernetIO
         {
             lastUpdateTime = Time.unscaledTime;
 
-            Debug.Log("[KSPEthernetIO]: Flight started");
+            Debug.Log("[KSPEthernetIO]: Flight started"); 
+            KSPEthernetIO.Handler.updateStatus(SInFlight);
             Debug.Log("[KSPEthernetIO]: Listening to PacketHandler");
             KSPEthernetIO.Handler.AddListener(this);
 
@@ -125,7 +127,8 @@ namespace KSPEthernetIO
             Debug.Log("[KSPEthernetIO]: Check connection");
             if (KSPEthernetIO.Server.ClientConnected)
             {
-                if (KSPEthernetIO.Handler.HandshakeReceived || Settings.HandshakeDisable) Debug.Log("[KSPEthernetIO]: Controller avaiable");
+                if (KSPEthernetIO.Handler.HandshakeReceived || Settings.HandshakeDisable)
+                    Debug.Log("[KSPEthernetIO]: Controller avaiable");
                 else Debug.LogWarning("[KSPEthernetIO]: Handshake not finished");
             }
             else Debug.LogWarning("[KSPEthernetIO]: No controller detected!");
@@ -150,6 +153,7 @@ namespace KSPEthernetIO
         void OnDestroy()
         {
             Debug.Log("[KSPEthernetIO]: Flight end");
+            KSPEthernetIO.Handler.updateStatus(SNotInFlight);
 
             Debug.Log("[KSPEthernetIO]: Disable ControlPackets");
             KSPEthernetIO.Handler.EnableControlPackets(false);
@@ -181,8 +185,8 @@ namespace KSPEthernetIO
                 packetCounter = 0;
             }
 
-                //Handle received packet
-                control.ControlsReceived(CPacket);
+            //Handle received packet
+            control.ControlsReceived(CPacket);
         }
 
         /// <summary>
