@@ -11,11 +11,11 @@ namespace KSPEthernetIO
     ///             KSPEthernetIO 
     ///           ***************** 
     /// 
-    /// Version:     0.1.1
+    /// Version:     0.1.2
     /// Author:      DrMarcel
     /// 
     /// License:     CC BY 4.0 
-    ///              https://creativecommons.org/licenses/by/3.0/
+    ///              https://creativecommons.org/licenses/by/4.0/
     /// 
     /// 
     /// Kerbal Space Program addon based on KSPSerialIO 0.19.1 by zitronen.

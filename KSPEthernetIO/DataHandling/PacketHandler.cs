@@ -359,7 +359,7 @@ namespace KSPEthernetIO
                 else handshakeTimer = 0;
 
                 //Watchdog
-                if (_server.ClientConnected && (HandshakeReceived || _handshakeDisable))
+                if (_server.ClientConnected && (HandshakeReceived || _handshakeDisable) && !_watchdogDisable)
                 {
                     WatchdogTick(dt);
                     if (WatchdogExceed(_watchdogTimeout))
