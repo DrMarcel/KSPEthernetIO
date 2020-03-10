@@ -14,7 +14,7 @@ namespace KSPEthernetIO
     /// Version:     0.1.1
     /// Author:      DrMarcel
     /// 
-    /// License:     CC BY 3.0 
+    /// License:     CC BY 4.0 
     ///              https://creativecommons.org/licenses/by/3.0/
     /// 
     /// 
@@ -31,8 +31,8 @@ namespace KSPEthernetIO
     /// Have fun and good flight!
     /// 
     /// 
-    /// Forum link:  ToDo
-    /// GitHub repo: ToDo
+    /// Forum link:  https://forum.kerbalspaceprogram.com/index.php?/topic/191502-ksp-181-kspethernetio-100-android-client-01-beta-ethernet-based-remote-control/
+    /// GitHub repo: https://github.com/DrMarcel/KSPEthernetIO
     /// 
     /// </summary>
     class KSPEthernetIO
